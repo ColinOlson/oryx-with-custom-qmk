@@ -78,15 +78,15 @@ jobs:
           git merge -Xignore-all-space oryx
           git push
 
-      - name: Update QMK firmware submodule to latest version (${{ steps.download-layout-source.outputs.firmware_version }})
+      - name: Update Vial QMK firmware submodule
         run: |
           git submodule update --init --remote --depth=1 --no-single-branch
           cd qmk_firmware
-          git checkout -B firmware${{ steps.download-layout-source.outputs.firmware_version }} origin/firmware${{ steps.download-layout-source.outputs.firmware_version }}
+          git checkout -B vial origin/vial
           git submodule update --init --recursive
           cd ..
           git add qmk_firmware
-          git commit -m "✨(qmk): Update firmware" || echo "No QMK change"
+          git commit -m "✨(qmk): Update Vial firmware" || echo "No QMK change"
           git push
 
       - name: Build qmk docker image
@@ -95,23 +95,15 @@ jobs:
       - name: Build the layout
         id: build-layout
         run: |
-          # Set keyboard directory and make prefix based on firmware version
-          if [ "${{ steps.download-layout-source.outputs.firmware_version }}" -ge 24 ]; then
-            keyboard_directory="qmk_firmware/keyboards/zsa"
-            make_prefix="zsa/"
-          else
-            keyboard_directory="qmk_firmware/keyboards"
-            make_prefix=""
-          fi
+          keyboard_directory="qmk_firmware/keyboards/zsa"
+          vial_keymap="${keyboard_directory}/${{ github.event.inputs.layout_geometry }}/keymaps/vial"
           
-          # Copy layout files to the qmk folder
-          rm -rf ${keyboard_directory}/${{ github.event.inputs.layout_geometry }}/keymaps/${{ github.event.inputs.layout_id }}
-          mkdir -p ${keyboard_directory}/${{ github.event.inputs.layout_geometry }}/keymaps && cp -r ${{ github.event.inputs.layout_id }} "$_"
+          # Convert the merged Oryx keymap into Vial's required keymap slot.
+          python3 scripts/prepare-vial-keymap.py "${{ github.event.inputs.layout_id }}" "${vial_keymap}"
           
           # Build the layout
           docker run -v ./qmk_firmware:/root --rm qmk /bin/sh -c "
-            qmk setup zsa/qmk_firmware -b firmware${{ steps.download-layout-source.outputs.firmware_version }} -y
-            make ${make_prefix}${{ github.event.inputs.layout_geometry }}:${{ github.event.inputs.layout_id }}
+            make zsa/${{ github.event.inputs.layout_geometry }}:vial
           "
           
           # Find and export built layout          

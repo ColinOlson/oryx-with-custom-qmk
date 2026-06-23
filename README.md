@@ -4,6 +4,20 @@ This repository allows combining the convenience of [Oryx’s](https://www.zsa.i
 
 For a detailed guide, check out the full [blog post here](https://blog.zsa.io/oryx-custom-qmk-features).
 
+## Vial support
+
+This fork builds the Voyager layout against [Vial QMK](https://github.com/vial-kb/vial-qmk). The workflow keeps the checked-in layout files in their Oryx-generated shape, then runs `scripts/prepare-vial-keymap.py` during the build to place an adapted copy in Vial's required `vial` keymap slot.
+
+Oryx-generated static combos cannot coexist directly with Vial's dynamic combo table. The build adapter converts the current Oryx combos into Vial's editable combo slots, so new Oryx combo changes are picked up on the next build.
+
+To run the same fetch/adapt/build flow locally:
+
+```sh
+scripts/build-vial-local.sh
+```
+
+Use `scripts/build-vial-local.sh --no-fetch` to build from the layout files already checked out in the repository.
+
 ## How it works
 
 Each time you run the GitHub Action, the workflow will:
